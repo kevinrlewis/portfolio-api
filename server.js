@@ -33,24 +33,25 @@ const client = new Client({
   user: 'folio',
   host: 'localhost',
   database: 'portfolio',
-  password: 'kevlew10',
+  password: '',
   port: 5432
 });
 client.connect();
 
-// ROUTES FOR OUR API
+// ROUTES FOR API
 var router = express.Router();
 
 // /api/v1
-// index of api
+// get index of api
 router.get('/', function(req, res) {
   res.json({ message: 'hooray! welcome to our api!' });
 });
 
 // /api/v1/auth
-// attempt to authenticate
+// post attempt to authenticate
 router.post('/auth', function(req, res) {
-  client.query(('SELECT password FROM lio.users WHERE username = \'' + req.body.username + '\''), (err, resp) => {
+  // TODO: protect from sql injection
+  client.query(('SELECT id, password FROM lio.users WHERE username = \'' + req.body.username + '\''), (err, resp) => {
     console.log(resp);
     if(resp.rowCount == 0) {
       res.json({ status: 404, title: 'Not Found' });
@@ -65,7 +66,7 @@ router.post('/auth', function(req, res) {
         }
         // if authorized
         if(enc) {
-          res.json({ status: 200, title: 'Success' });
+          res.json({ status: 200, title: 'Success', id: resp.rows[0].id });
         }
         // if not authorized
         else if(!enc) {
@@ -83,6 +84,7 @@ router.post('/auth', function(req, res) {
 // /api/v1/users
 // get all users
 router.get('/users', function(req, res) {
+  // TODO: protect from sql injection
   client.query('SELECT username, password FROM lio.users;', (err, resp) => {
     if(err) {
       console.log(err);
@@ -92,11 +94,25 @@ router.get('/users', function(req, res) {
 });
 
 // /api/v1/post
+// post a blog post
 router.post('/post', function(req, res) {
-  res.json({ status: 200, title: '/post' });
+  // res.json({ status: 200, title: '/post' });
+  console.log(req.body);
+  // TODO: protect from sql injection
+  client.query('INSERT INTO lio.posts(title, post, users_fk) ' +
+              'values (\'' + req.body.title + '\', \'' + req.body.content + '\', \'' + req.body.id + '\');',
+  (err, resp) => {
+    console.log(resp);
+    if(resp.command == 'INSERT' && resp.rowCount == 1) {
+      res.json({ status: 200, title: 'Post Successful' });
+    } else {
+      res.json({ status: 500, title: 'Internal Server Error' });
+    }
+  });
 });
 
 // /api/v1/posts
+// get all posts
 
 // REGISTER OUR ROUTES -------------------------------
 // all of our routes will be prefixed with /api
