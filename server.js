@@ -33,7 +33,7 @@ const client = new Client({
   user: 'folio',
   host: 'localhost',
   database: 'portfolio',
-  password: '',
+  password: 'kevlew10',
   port: 5432
 });
 client.connect();
@@ -44,12 +44,14 @@ var router = express.Router();
 // /api/v1
 // get index of api
 router.get('/', function(req, res) {
+  console.log('GET /');
   res.json({ message: 'hooray! welcome to our api!' });
 });
 
 // /api/v1/auth
 // post attempt to authenticate
 router.post('/auth', function(req, res) {
+  console.log('POST /auth');
   // TODO: protect from sql injection
   client.query(('SELECT id, password FROM lio.users WHERE username = \'' + req.body.username + '\''), (err, resp) => {
     console.log(resp);
@@ -84,6 +86,7 @@ router.post('/auth', function(req, res) {
 // /api/v1/users
 // get all users
 router.get('/users', function(req, res) {
+  console.log('GET /users');
   // TODO: protect from sql injection
   client.query('SELECT username, password FROM lio.users;', (err, resp) => {
     if(err) {
@@ -97,6 +100,7 @@ router.get('/users', function(req, res) {
 // post a blog post
 router.post('/post', function(req, res) {
   // res.json({ status: 200, title: '/post' });
+  console.log('POST /post');
   console.log(req.body);
   // TODO: protect from sql injection
   client.query('INSERT INTO lio.posts(title, post, users_fk) ' +
@@ -113,6 +117,17 @@ router.post('/post', function(req, res) {
 
 // /api/v1/posts
 // get all posts
+router.get('/posts', function(req, res) {
+  console.log('GET /posts');
+  // TODO: protect from sql injection
+  client.query('SELECT title, post, to_char(createdt, \'MM/DD/YYYY\') as createdt FROM lio.posts ORDER BY createdt DESC;', (err, resp) => {
+    if(resp.command == 'SELECT') {
+      res.json({ status: 200, title: 'Success', data: resp.rows });
+    } else {
+      res.json({ status: 500, title: 'Internal Server Error' });
+    }
+  });
+});
 
 // REGISTER OUR ROUTES -------------------------------
 // all of our routes will be prefixed with /api
