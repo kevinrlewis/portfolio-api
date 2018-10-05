@@ -25,7 +25,7 @@ const pool = new Pool({
   user: 'folio',
   host: 'localhost',
   database: 'portfolio',
-  password: 'kevlew10',
+  password: '',
   port: 5432
 });
 
@@ -33,7 +33,7 @@ const client = new Client({
   user: 'folio',
   host: 'localhost',
   database: 'portfolio',
-  password: 'kevlew10',
+  password: '',
   port: 5432
 });
 client.connect();
@@ -54,7 +54,7 @@ router.post('/auth', function(req, res) {
   console.log('POST /auth');
   // TODO: protect from sql injection
   client.query(('SELECT id, password FROM lio.users WHERE username = \'' + req.body.username + '\''), (err, resp) => {
-    console.log(resp);
+    if(err) { console.log(err); }
     if(resp.rowCount == 0) {
       res.json({ status: 404, title: 'Not Found' });
     } else {
@@ -85,16 +85,16 @@ router.post('/auth', function(req, res) {
 
 // /api/v1/users
 // get all users
-router.get('/users', function(req, res) {
-  console.log('GET /users');
-  // TODO: protect from sql injection
-  client.query('SELECT username, password FROM lio.users;', (err, resp) => {
-    if(err) {
-      console.log(err);
-    }
-    res.json(resp.rows);
-  });
-});
+// router.get('/users', function(req, res) {
+//   console.log('GET /users');
+//   // TODO: protect from sql injection
+//   client.query('SELECT username, password FROM lio.users;', (err, resp) => {
+//     if(err) {
+//       console.log(err);
+//     }
+//     res.json(resp.rows);
+//   });
+// });
 
 // /api/v1/post
 // post a blog post
@@ -106,7 +106,7 @@ router.post('/post', function(req, res) {
   client.query('INSERT INTO lio.posts(title, post, users_fk) ' +
               'values (\'' + req.body.title + '\', \'' + req.body.content + '\', \'' + req.body.id + '\');',
   (err, resp) => {
-    console.log(resp);
+    if(err) { console.log(err); }
     if(resp.command == 'INSERT' && resp.rowCount == 1) {
       res.json({ status: 200, title: 'Post Successful' });
     } else {
@@ -121,8 +121,11 @@ router.get('/posts', function(req, res) {
   console.log('GET /posts');
   // TODO: protect from sql injection
   client.query('SELECT title, post, to_char(createdt, \'MM/DD/YYYY\') as createdt FROM lio.posts ORDER BY createdt DESC;', (err, resp) => {
+    if(err) { console.log(err); }
     if(resp.command == 'SELECT') {
       res.json({ status: 200, title: 'Success', data: resp.rows });
+    } else if(resp.rowCount == 0) {
+      res.json({ status: 404, title: 'No Posts Retrieved' });
     } else {
       res.json({ status: 500, title: 'Internal Server Error' });
     }
