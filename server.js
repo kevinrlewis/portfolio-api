@@ -53,7 +53,8 @@ router.get('/', function(req, res) {
 router.post('/auth', function(req, res) {
   console.log('POST /auth');
   // TODO: protect from sql injection
-  client.query(('SELECT id, password FROM lio.users WHERE username = \'' + req.body.username + '\''), (err, resp) => {
+  // client.query(('SELECT id, password FROM lio.users WHERE username = \'' + req.body.username + '\''), (err, resp) => {
+  client.query(('SELECT user_access(\'' + req.body.username + '\');'), (err, resp) => {
     if(err) { console.log(err); }
     if(resp.rowCount == 0) {
       res.json({ status: 404, title: 'Not Found' });
