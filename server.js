@@ -4,8 +4,8 @@ var app = express();
 var bodyParser = require('body-parser');
 var bcrypt = require('bcrypt-nodejs');
 var keyword = require('./../keyword.json');
-var crypto = require('crypto');
 var fs = require('fs');
+var cryptojs = require('crypto-js');
 
 const saltRounds = 6;
 const { Pool, Client } = require('pg');
@@ -33,7 +33,7 @@ const client = new Client({
   user: 'folio',
   host: 'localhost',
   database: 'portfolio',
-  password: '',
+  password: 'kevlew10',
   port: 5432
 });
 client.connect();
@@ -52,16 +52,16 @@ router.get('/', function(req, res) {
 // post attempt to authenticate
 router.post('/auth', function(req, res) {
   console.log('POST /auth');
-  // TODO: protect from sql injection
-  // client.query(('SELECT id, password FROM lio.users WHERE username = \'' + req.body.username + '\''), (err, resp) => {
+  // call sql plpgsql function
   client.query(('SELECT user_access(\'' + req.body.username + '\');'), (err, resp) => {
     if(err) { console.log(err); }
+
     if(resp.rowCount == 0) {
       res.json({ status: 404, title: 'Not Found' });
     } else {
-      bcrypt.compare(req.body.password, resp.rows[0].password, function(error, enc) {
-        // authenticate the response so that a false 200 doesn't allow posts
-        //var cipher = crypto.createHmac('sha256', keyword.keyword);
+      var user_access = resp.rows[0].user_access;
+
+      bcrypt.compare(req.body.password, user_access.user_password, function(error, enc) {
 
         // if error from comparing
         if(error) {
@@ -69,7 +69,7 @@ router.post('/auth', function(req, res) {
         }
         // if authorized
         if(enc) {
-          res.json({ status: 200, title: 'Success', id: resp.rows[0].id });
+          res.json({ status: 200, title: 'Success', id: user_access.user_id });
         }
         // if not authorized
         else if(!enc) {
@@ -84,31 +84,22 @@ router.post('/auth', function(req, res) {
   });
 });
 
-// /api/v1/users
-// get all users
-// router.get('/users', function(req, res) {
-//   console.log('GET /users');
-//   // TODO: protect from sql injection
-//   client.query('SELECT username, password FROM lio.users;', (err, resp) => {
-//     if(err) {
-//       console.log(err);
-//     }
-//     res.json(resp.rows);
-//   });
-// });
-
 // /api/v1/post
 // post a blog post
 router.post('/post', function(req, res) {
   // res.json({ status: 200, title: '/post' });
   console.log('POST /post');
   console.log(req.body);
-  // TODO: protect from sql injection
-  client.query('INSERT INTO lio.posts(title, post, users_fk) ' +
-              'values (\'' + req.body.title + '\', \'' + req.body.content + '\', \'' + req.body.id + '\');',
+  // authenticate the response so that a false 200 doesn't allow posts
+  var hash = cryptojs.SHA256(keyword.keyword);
+  console.log(hash.toString(cryptojs.enc.Base64));
+
+  // call insert_post function
+  client.query(('SELECT insert_post(\'' + req.body.title + '\', \'' + req.body.content + '\', ' + req.body.id + ');'),
   (err, resp) => {
     if(err) { console.log(err); }
-    if(resp.command == 'INSERT' && resp.rowCount == 1) {
+
+    if(resp.command == 'SELECT' && resp.rowCount == 1) {
       res.json({ status: 200, title: 'Post Successful' });
     } else {
       res.json({ status: 500, title: 'Internal Server Error' });
@@ -134,7 +125,7 @@ router.get('/posts', function(req, res) {
 });
 
 // REGISTER OUR ROUTES -------------------------------
-// all of our routes will be prefixed with /api
+// all of our routes will be prefixed with /api/v1
 app.use('/api/v1', router);
 
 // START THE SERVER
