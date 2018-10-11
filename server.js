@@ -4,6 +4,7 @@ var app = express();
 var bodyParser = require('body-parser');
 var bcrypt = require('bcrypt-nodejs');
 var keyword = require('./../keyword.json');
+var config = require('./../db_config.json');
 var fs = require('fs');
 var cryptojs = require('crypto-js');
 
@@ -22,19 +23,19 @@ var port = process.env.PORT || 8080;
 
 // DATABASE STUFF
 const pool = new Pool({
-  user: 'folio',
-  host: 'localhost',
-  database: 'portfolio',
-  password: '',
-  port: 5432
+  user: config.user,
+  host: config.host,
+  database: config.database,
+  password: config.password,
+  port: config.port
 });
 
 const client = new Client({
-  user: 'folio',
-  host: 'localhost',
-  database: 'portfolio',
-  password: 'kevlew10',
-  port: 5432
+  user: config.user,
+  host: config.host,
+  database: config.database,
+  password: config.password,
+  port: config.port
 });
 client.connect();
 
@@ -89,33 +90,38 @@ router.post('/auth', function(req, res) {
 router.post('/post', function(req, res) {
   // res.json({ status: 200, title: '/post' });
   console.log('POST /post');
-  console.log(req.body);
+
   // authenticate the response so that a false 200 doesn't allow posts
-  var hash = cryptojs.SHA256(keyword.keyword);
-  console.log(hash.toString(cryptojs.enc.Base64));
+  if(cryptojs.enc.Utf8.stringify(cryptojs.AES.decrypt(req.body.sign, keyword.keyword)) == keyword.message) {
+    // call insert_post function
+    client.query(('SELECT insert_post(\'' + req.body.title + '\', \'' + req.body.content + '\', ' + req.body.id + ');'),
+    (err, resp) => {
+      if(err) { console.log(err); }
 
-  // call insert_post function
-  client.query(('SELECT insert_post(\'' + req.body.title + '\', \'' + req.body.content + '\', ' + req.body.id + ');'),
-  (err, resp) => {
-    if(err) { console.log(err); }
-
-    if(resp.command == 'SELECT' && resp.rowCount == 1) {
-      res.json({ status: 200, title: 'Post Successful' });
-    } else {
-      res.json({ status: 500, title: 'Internal Server Error' });
-    }
-  });
+      // check if insert function was run and returned a single row
+      if(resp.command == 'SELECT' && resp.rowCount == 1) {
+        res.json({ status: 200, title: 'Post Successful' });
+      } else {
+        res.json({ status: 500, title: 'Internal Server Error' });
+      }
+    });
+  // if AES decryption fails
+  } else {
+    res.json({ status: 401, title: 'Unauthorized'});
+  }
 });
 
 // /api/v1/posts
 // get all posts
 router.get('/posts', function(req, res) {
   console.log('GET /posts');
-  // TODO: protect from sql injection
-  client.query('SELECT title, post, to_char(createdt, \'MM/DD/YYYY\') as createdt FROM lio.posts ORDER BY createdt DESC;', (err, resp) => {
+  // call function to retrieve posts
+  client.query('SELECT get_posts();', (err, resp) => {
     if(err) { console.log(err); }
+
+    // verify response
     if(resp.command == 'SELECT') {
-      res.json({ status: 200, title: 'Success', data: resp.rows });
+      res.json({ status: 200, title: 'Success', data: resp.rows[0].get_posts });
     } else if(resp.rowCount == 0) {
       res.json({ status: 404, title: 'No Posts Retrieved' });
     } else {
