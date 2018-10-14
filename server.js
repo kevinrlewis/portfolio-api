@@ -137,7 +137,7 @@ app.use('/api/v1', router);
 app.use(function(req, res) {
   res.json({
     'name': 'Error',
-    'status'; 404,
+    'status': 404,
     'message': 'Invalid Request',
     'statusCode': 404
   });
