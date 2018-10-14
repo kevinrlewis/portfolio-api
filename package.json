@@ -11,9 +11,11 @@
   "dependencies": {
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.18.3",
+    "compression": "^1.7.3",
     "crypto-js": "^3.1.9-1",
     "express": "^4.16.3",
     "fs": "0.0.1-security",
+    "helmet": "^3.14.0",
     "pg": "^7.4.3",
     "pug": "^2.0.3"
   }

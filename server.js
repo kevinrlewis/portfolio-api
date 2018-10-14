@@ -7,18 +7,22 @@ var keyword = require('./../keyword.json');
 var config = require('./../db_config.json');
 var fs = require('fs');
 var cryptojs = require('crypto-js');
+var compression = require('compression');
+var helmet = require('helmet');
 
 const saltRounds = 6;
 const { Pool, Client } = require('pg');
 
-app.set('view engine', 'pug')
+app.set('view engine', 'pug');
+app.use(compression());
+app.use(helmet());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
+// app.use(function(req, res, next) {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+//   next();
+// });
 
 var port = process.env.PORT || 8080;
 
