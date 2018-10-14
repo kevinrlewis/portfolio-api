@@ -22,21 +22,33 @@ app.use(function(req, res, next) {
 var port = process.env.PORT || 8080;
 
 // DATABASE STUFF
-const pool = new Pool({
-  user: config.user,
-  host: config.host,
-  database: config.database,
-  password: config.password,
-  port: config.port
-});
+// const pool = new Pool({
+//   user: config.user,
+//   host: config.host,
+//   database: config.database,
+//   password: config.password,
+//   port: config.port
+// });
 
-const client = new Client({
-  user: config.user,
-  host: config.host,
-  database: config.database,
-  password: config.password,
-  port: config.port
-});
+var client;
+if(process.env.ENVIRONMENT != 'PROD') {
+  client = new Client({
+    user: config.dev.user,
+    host: config.dev.host,
+    database: config.dev.database,
+    password: config.dev.password,
+    port: config.dev.port
+  });
+} else {
+  client = new Client({
+    user: config.user,
+    host: config.host,
+    database: config.database,
+    password: config.password,
+    port: config.port
+  });
+}
+
 client.connect();
 
 // ROUTES FOR API
@@ -118,7 +130,7 @@ router.get('/posts', function(req, res) {
   // call function to retrieve posts
   client.query('SELECT get_posts();', (err, resp) => {
     if(err) { console.log(err); }
-
+    // console.log(resp);
     // verify response
     if(resp.command == 'SELECT') {
       res.json({ status: 200, title: 'Success', data: resp.rows[0].get_posts });
