@@ -1,0 +1,39 @@
+html
+  head
+    title='Portfolio API'
+  body
+    h1='/api/v1'
+    div
+      h2 GET /
+      p API information page
+      p Renders API index.pug
+      hr
+      h2 POST /auth
+      p Attempt to authenticate
+      blockquote
+        pre
+          code { status: 200, title: 'Success', id: 1 }
+        pre
+          code { status: 401, title: 'Unauthorized' }
+        pre
+          code { status: 500, title: 'Internal Server Error' }
+      hr
+      h2 POST /post
+      p Attempt to create a post
+      blockquote
+        pre
+          code { status: 200, title: 'Success' }
+        pre
+          code { status: 401, title: 'Unauthorized' }
+        pre
+          code { status: 500, title: 'Internal Server Error' }
+      hr
+      h2 GET /posts
+      p Retrieve posts
+      blockquote
+        pre
+          code { status: 200, title: 'Success', data: [] }
+        pre
+          code { status: 404, title: 'No Posts Retrieved' }
+        pre
+          code { status: 500, title: 'Internal Server Error' }

@@ -11,6 +11,7 @@ var cryptojs = require('crypto-js');
 const saltRounds = 6;
 const { Pool, Client } = require('pg');
 
+app.set('view engine', 'pug')
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(function(req, res, next) {
@@ -58,7 +59,7 @@ var router = express.Router();
 // get index of api
 router.get('/', function(req, res) {
   console.log('GET /');
-  res.json({ message: 'hooray! welcome to our api!' });
+  res.render('index');
 });
 
 // /api/v1/auth
@@ -70,6 +71,7 @@ router.post('/auth', function(req, res) {
     if(err) { console.log(err); }
 
     if(resp.rowCount == 0) {
+      res.status(404);
       res.json({ status: 404, title: 'Not Found' });
     } else {
       var user_access = resp.rows[0].user_access;
@@ -78,6 +80,7 @@ router.post('/auth', function(req, res) {
 
         // if error from comparing
         if(error) {
+          res.status(500);
           res.json({ status: 500, title: 'Internal Server Error' });
         }
         // if authorized
@@ -86,10 +89,12 @@ router.post('/auth', function(req, res) {
         }
         // if not authorized
         else if(!enc) {
+          res.status(401);
           res.json({ status: 401, title: 'Unauthorized' })
         }
         // if some other response
         else {
+          res.status(500);
           res.json({ status: 500, title: 'Internal Server Error' })
         }
       });
@@ -109,16 +114,22 @@ router.post('/post', function(req, res) {
     client.query(('SELECT insert_post(\'' + req.body.title + '\', \'' + req.body.content + '\', ' + req.body.id + ');'),
     (err, resp) => {
       if(err) { console.log(err); }
-
-      // check if insert function was run and returned a single row
-      if(resp.command == 'SELECT' && resp.rowCount == 1) {
-        res.json({ status: 200, title: 'Post Successful' });
+      if(resp == undefined) {
+        res.status(500);
+        res.json({ status: 500, title: 'Post Unsuccessful, Possible Invalid Format' });
       } else {
-        res.json({ status: 500, title: 'Internal Server Error' });
+        // check if insert function was run and returned a single row
+        if(resp.command == 'SELECT' && resp.rowCount == 1) {
+          res.json({ status: 200, title: 'Success' });
+        } else {
+          res.status(500);
+          res.json({ status: 500, title: 'Internal Server Error' });
+        }
       }
     });
   // if AES decryption fails
   } else {
+    res.status(401);
     res.json({ status: 401, title: 'Unauthorized'});
   }
 });
@@ -135,8 +146,10 @@ router.get('/posts', function(req, res) {
     if(resp.command == 'SELECT') {
       res.json({ status: 200, title: 'Success', data: resp.rows[0].get_posts });
     } else if(resp.rowCount == 0) {
+      res.status(404);
       res.json({ status: 404, title: 'No Posts Retrieved' });
     } else {
+      res.status(500);
       res.json({ status: 500, title: 'Internal Server Error' });
     }
   });
@@ -147,6 +160,7 @@ router.get('/posts', function(req, res) {
 app.use('/api/v1', router);
 
 app.use(function(req, res) {
+  res.status(404);
   res.json({
     'name': 'Error',
     'status': 404,
